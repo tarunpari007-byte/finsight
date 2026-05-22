@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import {
   AreaChart, Area, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, ResponsiveContainer, Legend,
@@ -13,6 +13,7 @@ import {
   calcSWPModeA, calcSWPModeB, calcEMI, calcAmortization, formatIndianNumber, formatFull,
 } from '../utils/calculations';
 import { DEFAULT_SIP, DEFAULT_SWP, DEFAULT_EMI } from '../data/defaults';
+import DownloadPDFButton from '../components/DownloadPDFButton';
 
 const CHART_COLORS = {
   primary: 'var(--accent-primary)',
@@ -483,13 +484,17 @@ function EMICalculator({ emiData, setEmiData, onEMIChange }) {
 
 export default function Calculators({ sipData, setSipData, swpData, setSwpData, emiData, setEmiData, onEMIChange }) {
   const [tab, setTab] = useState('sip');
+  const sectionRef = useRef(null);
 
   return (
-    <div className="section-enter">
+    <div className="section-enter" ref={sectionRef}>
       <div style={{ marginBottom: 24 }}>
-        <h2 style={{ margin: '0 0 4px', fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif' }}>
-          Calculators
-        </h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, flexWrap: 'wrap', gap: 10 }}>
+          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif' }}>
+            Calculators
+          </h2>
+          <DownloadPDFButton sectionRef={sectionRef} filename="finsight-calculators" />
+        </div>
         <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--text-secondary)', fontFamily: 'DM Sans, sans-serif' }}>
           SIP, SWP, and EMI calculators with live outputs
         </p>

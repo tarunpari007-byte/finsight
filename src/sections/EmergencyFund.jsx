@@ -1,9 +1,10 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import Card from '../components/Card';
 import InputField from '../components/InputField';
 import Tooltip from '../components/Tooltip';
 import { calcEmergencyFund, formatIndianNumber } from '../utils/calculations';
 import { DEFAULT_EMERGENCY } from '../data/defaults';
+import DownloadPDFButton from '../components/DownloadPDFButton';
 
 const EMPLOYMENT_TYPES = [
   { value: 'Salaried — Stable', label: 'Salaried — Stable (Govt / Large Corp)', months: 3 },
@@ -34,6 +35,7 @@ function AdequacyBar({ pct }) {
 
 export default function EmergencyFund({ efData, setEfData }) {
   const d = efData;
+  const sectionRef = useRef(null);
 
   const results = useMemo(() =>
     calcEmergencyFund(d.monthlyExpenses, d.employmentType, d.dependents, d.currentFund),
@@ -43,11 +45,14 @@ export default function EmergencyFund({ efData, setEfData }) {
   const monthlySIP = results.gap > 0 ? results.gap / d.buildMonths : 0;
 
   return (
-    <div className="section-enter">
+    <div className="section-enter" ref={sectionRef}>
       <div style={{ marginBottom: 24 }}>
-        <h2 style={{ margin: '0 0 4px', fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif' }}>
-          Emergency Fund
-        </h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, flexWrap: 'wrap', gap: 10 }}>
+          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif' }}>
+            Emergency Fund
+          </h2>
+          <DownloadPDFButton sectionRef={sectionRef} filename="finsight-emergency-fund" />
+        </div>
         <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)', fontFamily: 'DM Sans, sans-serif' }}>
           Calculate how much you need and how to build it
         </p>

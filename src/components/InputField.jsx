@@ -1,6 +1,39 @@
+import { useState } from 'react';
 import Tooltip from './Tooltip';
+import { formatWithIndianCommas } from '../utils/calculations';
 
 export default function InputField({ label, tooltip, value, onChange, type = 'number', min, max, step, prefix, suffix, placeholder }) {
+  const isCurrency = prefix === '₹';
+  const [focused, setFocused] = useState(false);
+  const [rawText, setRawText] = useState('');
+
+  const displayValue = isCurrency
+    ? (focused ? rawText : formatWithIndianCommas(value))
+    : value;
+
+  const handleFocus = (e) => {
+    if (isCurrency) {
+      setFocused(true);
+      setRawText(value === 0 ? '' : String(value));
+    }
+    e.target.style.borderBottomColor = 'var(--accent-primary)';
+  };
+
+  const handleBlur = (e) => {
+    if (isCurrency) setFocused(false);
+    e.target.style.borderBottomColor = 'transparent';
+  };
+
+  const handleChange = (e) => {
+    if (isCurrency) {
+      const digits = e.target.value.replace(/[^0-9]/g, '');
+      setRawText(digits);
+      onChange(digits === '' ? 0 : Number(digits));
+    } else {
+      onChange(type === 'number' ? Number(e.target.value) : e.target.value);
+    }
+  };
+
   return (
     <div style={{ marginBottom: 16 }}>
       <label style={{
@@ -20,12 +53,15 @@ export default function InputField({ label, tooltip, value, onChange, type = 'nu
           }}>{prefix}</span>
         )}
         <input
-          type={type}
-          value={value}
-          onChange={e => onChange(type === 'number' ? Number(e.target.value) : e.target.value)}
-          min={min}
-          max={max}
-          step={step}
+          type={isCurrency ? 'text' : type}
+          inputMode={isCurrency ? 'numeric' : undefined}
+          value={displayValue}
+          onChange={handleChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          min={isCurrency ? undefined : min}
+          max={isCurrency ? undefined : max}
+          step={isCurrency ? undefined : step}
           placeholder={placeholder}
           style={{
             width: '100%',
@@ -36,12 +72,10 @@ export default function InputField({ label, tooltip, value, onChange, type = 'nu
             padding: prefix ? '10px 12px 10px 28px' : suffix ? '10px 36px 10px 12px' : '10px 12px',
             color: 'var(--text-primary)',
             fontSize: 14,
-            fontFamily: type === 'number' ? 'DM Mono, monospace' : 'DM Sans, sans-serif',
+            fontFamily: 'DM Mono, monospace',
             outline: 'none',
             transition: 'border-bottom-color 0.2s',
           }}
-          onFocus={e => { e.target.style.borderBottomColor = 'var(--accent-primary)'; }}
-          onBlur={e => { e.target.style.borderBottomColor = 'transparent'; }}
         />
         {suffix && (
           <span style={{

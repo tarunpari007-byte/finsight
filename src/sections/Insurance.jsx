@@ -1,9 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import Card from '../components/Card';
 import InputField from '../components/InputField';
 import Toggle from '../components/Toggle';
 import SegmentedControl from '../components/SegmentedControl';
-import { useState } from 'react';
+import DownloadPDFButton from '../components/DownloadPDFButton';
 import { calcLifeInsurance, calcHealthInsurance, formatIndianNumber } from '../utils/calculations';
 import { DEFAULT_INSURANCE } from '../data/defaults';
 
@@ -165,13 +165,17 @@ function HealthInsurance({ data, setData }) {
 
 export default function Insurance({ lifeData, setLifeData, healthData, setHealthData }) {
   const [tab, setTab] = useState('life');
+  const sectionRef = useRef(null);
 
   return (
-    <div className="section-enter">
+    <div className="section-enter" ref={sectionRef}>
       <div style={{ marginBottom: 24 }}>
-        <h2 style={{ margin: '0 0 4px', fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif' }}>
-          Insurance Adequacy
-        </h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, flexWrap: 'wrap', gap: 10 }}>
+          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif' }}>
+            Insurance Adequacy
+          </h2>
+          <DownloadPDFButton sectionRef={sectionRef} filename="finsight-insurance" />
+        </div>
         <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--text-secondary)', fontFamily: 'DM Sans, sans-serif' }}>
           Check if your life and health cover is adequate
         </p>

@@ -1,4 +1,6 @@
+import { useRef } from 'react';
 import Card from '../components/Card';
+import DownloadPDFButton from '../components/DownloadPDFButton';
 import { DUMMY_PILLARS } from '../data/defaults';
 
 // Map each pillar to the section key it corresponds to
@@ -79,6 +81,7 @@ function PillarCard({ pillar, isFilled, onNavigate }) {
 }
 
 export default function Dashboard({ scores, filledSections = new Set(), onNavigate }) {
+  const sectionRef = useRef(null);
   const pillars = DUMMY_PILLARS.map(p => ({
     ...p,
     score: scores ? (scores[p.key] ?? p.score) : p.score,
@@ -89,7 +92,7 @@ export default function Dashboard({ scores, filledSections = new Set(), onNaviga
   const hasRealData = !!scores;
 
   return (
-    <div className="section-enter">
+    <div className="section-enter" ref={sectionRef}>
       {/* Amber banner — only when no sections filled */}
       {!hasRealData && (
         <div style={{
@@ -129,6 +132,9 @@ export default function Dashboard({ scores, filledSections = new Set(), onNaviga
 
       {/* Overall Score */}
       <Card style={{ marginBottom: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+          <DownloadPDFButton sectionRef={sectionRef} filename="finsight-dashboard" />
+        </div>
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           flexWrap: 'wrap', gap: 16,

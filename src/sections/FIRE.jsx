@@ -1,9 +1,10 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, ResponsiveContainer } from 'recharts';
 import Card from '../components/Card';
 import InputField from '../components/InputField';
 import { calcFIRE, formatIndianNumber, formatFull } from '../utils/calculations';
 import { DEFAULT_FIRE } from '../data/defaults';
+import DownloadPDFButton from '../components/DownloadPDFButton';
 
 function formatYAxis(v) {
   if (v >= 1_00_00_000) return `${(v / 1_00_00_000).toFixed(1)}Cr`;
@@ -51,6 +52,7 @@ function MilestoneTimeline({ currentAge, retirementAge, fireNumber, savedGrown }
 
 export default function FIRECalculator({ fireData, setFireData }) {
   const d = fireData;
+  const sectionRef = useRef(null);
 
   const results = useMemo(() =>
     calcFIRE(d.currentAge, d.retirementAge, d.monthlyExpenses, d.inflation, d.annualReturn, d.postReturnRate, d.currentSavings),
@@ -71,11 +73,14 @@ export default function FIRECalculator({ fireData, setFireData }) {
   }, [results, d]);
 
   return (
-    <div className="section-enter">
+    <div className="section-enter" ref={sectionRef}>
       <div style={{ marginBottom: 24 }}>
-        <h2 style={{ margin: '0 0 4px', fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif' }}>
-          FIRE Calculator
-        </h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, flexWrap: 'wrap', gap: 10 }}>
+          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif' }}>
+            FIRE Calculator
+          </h2>
+          <DownloadPDFButton sectionRef={sectionRef} filename="finsight-fire" />
+        </div>
         <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)', fontFamily: 'DM Sans, sans-serif' }}>
           Financial Independence, Retire Early — calculate your number
         </p>

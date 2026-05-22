@@ -1,5 +1,18 @@
 // ─── Formatting ─────────────────────────────────────────────────────────────
 
+// For input field display: formats raw number as Indian comma-separated string
+// e.g. 100000 → "1,00,000", 10000000 → "1,00,00,000"
+export function formatWithIndianCommas(num) {
+  if (num === null || num === undefined) return '';
+  if (num === 0) return '0';
+  const n = Math.floor(Math.abs(Number(num)));
+  const str = n.toString();
+  if (str.length <= 3) return str;
+  const lastThree = str.slice(-3);
+  const remaining = str.slice(0, -3);
+  return remaining.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + lastThree;
+}
+
 export function formatIndianNumber(num) {
   if (!num && num !== 0) return '0';
   const n = Math.round(num);

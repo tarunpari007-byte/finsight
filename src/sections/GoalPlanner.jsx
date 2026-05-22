@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Trash2, Plus } from 'lucide-react';
 import Card from '../components/Card';
 import Tooltip from '../components/Tooltip';
-import { calcGoalOutputs, formatIndianNumber } from '../utils/calculations';
+import DownloadPDFButton from '../components/DownloadPDFButton';
+import { calcGoalOutputs, formatIndianNumber, formatWithIndianCommas } from '../utils/calculations';
 import { DEFAULT_GOALS, GOAL_TYPES, CURRENT_YEAR } from '../data/defaults';
 
 // Compact inline label style — proper case, smaller, no uppercase
@@ -31,6 +32,37 @@ const inputStyle = {
 };
 
 function GoalInput({ label, tooltip, value, onChange, prefix, suffix, min, max, step }) {
+  const isCurrency = prefix === '₹';
+  const [focused, setFocused] = useState(false);
+  const [rawText, setRawText] = useState('');
+
+  const displayValue = isCurrency
+    ? (focused ? rawText : formatWithIndianCommas(value))
+    : value;
+
+  const handleFocus = (e) => {
+    if (isCurrency) {
+      setFocused(true);
+      setRawText(value === 0 ? '' : String(value));
+    }
+    e.target.style.borderBottomColor = 'var(--accent-primary)';
+  };
+
+  const handleBlur = (e) => {
+    if (isCurrency) setFocused(false);
+    e.target.style.borderBottomColor = 'transparent';
+  };
+
+  const handleChange = (e) => {
+    if (isCurrency) {
+      const digits = e.target.value.replace(/[^0-9]/g, '');
+      setRawText(digits);
+      onChange(digits === '' ? 0 : Number(digits));
+    } else {
+      onChange(Number(e.target.value));
+    }
+  };
+
   return (
     <div style={{ marginBottom: 12 }}>
       <label style={labelStyle}>
@@ -46,17 +78,20 @@ function GoalInput({ label, tooltip, value, onChange, prefix, suffix, min, max, 
           }}>{prefix}</span>
         )}
         <input
-          type="number"
-          value={value}
-          onChange={e => onChange(Number(e.target.value))}
-          min={min} max={max} step={step || 1}
+          type={isCurrency ? 'text' : 'number'}
+          inputMode={isCurrency ? 'numeric' : undefined}
+          value={displayValue}
+          onChange={handleChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          min={isCurrency ? undefined : min}
+          max={isCurrency ? undefined : max}
+          step={isCurrency ? undefined : step || 1}
           style={{
             ...inputStyle,
             paddingLeft: prefix ? 22 : 10,
             paddingRight: suffix ? 28 : 10,
           }}
-          onFocus={e => { e.target.style.borderBottomColor = 'var(--accent-primary)'; }}
-          onBlur={e => { e.target.style.borderBottomColor = 'transparent'; }}
         />
         {suffix && (
           <span style={{
@@ -236,6 +271,7 @@ function GoalCard({ goal, onUpdate, onDelete, currentYear }) {
 
 export default function GoalPlanner({ goals, setGoals }) {
   const currentYear = CURRENT_YEAR;
+  const sectionRef = useRef(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedType, setSelectedType] = useState('');
   const [customName, setCustomName] = useState('');
@@ -276,7 +312,7 @@ export default function GoalPlanner({ goals, setGoals }) {
   }, 0);
 
   return (
-    <div className="section-enter">
+    <div className="section-enter" ref={sectionRef}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif' }}>
@@ -286,8 +322,10 @@ export default function GoalPlanner({ goals, setGoals }) {
             Plan your financial goals and calculate the SIP needed
           </p>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <DownloadPDFButton sectionRef={sectionRef} filename="finsight-goals" />
+          <button
+            onClick={() => setShowAddModal(true)}
           style={{
             display: 'flex', alignItems: 'center', gap: 6,
             background: 'var(--accent-primary)', color: '#0D1117',
@@ -299,6 +337,7 @@ export default function GoalPlanner({ goals, setGoals }) {
           <Plus size={15} />
           Add a Goal
         </button>
+        </div>
       </div>
 
       {/* Add Goal Modal — anchored to top of viewport */}
