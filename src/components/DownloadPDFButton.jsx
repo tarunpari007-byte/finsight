@@ -1,79 +1,76 @@
 import { useCallback, useState } from 'react';
 import { Download } from 'lucide-react';
+import { toPng } from 'html-to-image';
 
 export default function DownloadPDFButton({ sectionRef, filename = 'finsight-section' }) {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
 
   const handleDownload = useCallback(async () => {
     if (!sectionRef?.current || loading) return;
     setLoading(true);
+    setError(false);
     try {
-      const html2canvas = (await import('html2canvas')).default;
-      const { jsPDF } = await import('jspdf');
+      const pixelRatio = Math.max(2, window.devicePixelRatio);
+      const opts = {
+        pixelRatio,
+        cacheBust: true,
+        skipFonts: true,
+        // Explicit background so transparent areas render as the app's dark bg
+        backgroundColor: getComputedStyle(document.documentElement)
+          .getPropertyValue('--bg-base').trim() || '#0D1117',
+      };
 
-      const element = sectionRef.current;
-      const bgColor = getComputedStyle(document.documentElement)
-        .getPropertyValue('--bg-base').trim() || '#0D1117';
-
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: bgColor,
-        logging: false,
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-
-      // A4 portrait, 10mm margins
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pageW = pdf.internal.pageSize.getWidth();
-      const pageH = pdf.internal.pageSize.getHeight();
-      const margin = 10;
-      const printW = pageW - 2 * margin;
-      const printH = (canvas.height / canvas.width) * printW;
-
-      if (printH <= pageH - 2 * margin) {
-        pdf.addImage(imgData, 'PNG', margin, margin, printW, printH);
-      } else {
-        // Multi-page: slice the image across pages
-        const ratio = printW / canvas.width;
-        const sliceH = (pageH - 2 * margin) / ratio; // canvas px per page
-        let yOffset = 0;
-        while (yOffset < canvas.height) {
-          if (yOffset > 0) pdf.addPage();
-          const sliceCanvas = document.createElement('canvas');
-          sliceCanvas.width = canvas.width;
-          sliceCanvas.height = Math.min(sliceH, canvas.height - yOffset);
-          const ctx = sliceCanvas.getContext('2d');
-          ctx.drawImage(canvas, 0, -yOffset, canvas.width, canvas.height);
-          const sliceData = sliceCanvas.toDataURL('image/png');
-          const slicePrintH = sliceCanvas.height * ratio;
-          pdf.addImage(sliceData, 'PNG', margin, margin, printW, slicePrintH);
-          yOffset += sliceH;
+      // html-to-image commonly fails on the first call because the browser
+      // hasn't cached font metrics for the SVG foreignObject renderer yet.
+      // Calling it up to 3 times resolves this — subsequent calls succeed.
+      let dataUrl;
+      let lastErr;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          dataUrl = await toPng(sectionRef.current, opts);
+          break;
+        } catch (e) {
+          lastErr = e;
+          await new Promise(r => setTimeout(r, 300));
         }
       }
+      if (!dataUrl) throw lastErr;
 
-      pdf.save(`${filename}.pdf`);
+      const link = document.createElement('a');
+      link.download = `${filename}.png`;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     } catch (err) {
-      console.error('PDF download failed:', err);
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('Download failed:', err);
+      // eslint-disable-next-line no-alert
+      window.alert('Download error: ' + msg);
+      setError(true);
+      setTimeout(() => setError(false), 3000);
     } finally {
       setLoading(false);
     }
   }, [sectionRef, filename, loading]);
 
+  const buttonColor = error ? 'var(--accent-danger)' : 'var(--text-secondary)';
+  const borderColor = error ? 'rgba(224,92,107,0.4)' : 'var(--border-subtle)';
+
   return (
     <button
       onClick={handleDownload}
       disabled={loading}
-      title="Download as PDF"
+      title="Save as PNG image"
       style={{
         display: 'flex', alignItems: 'center', gap: 5,
         background: 'var(--bg-raised)',
-        border: '1px solid var(--border-subtle)',
+        border: `1px solid ${borderColor}`,
         borderRadius: 8,
         padding: '6px 12px',
         fontSize: 12,
-        color: loading ? 'var(--text-secondary)' : 'var(--text-secondary)',
+        color: buttonColor,
         cursor: loading ? 'default' : 'pointer',
         fontFamily: 'DM Sans, sans-serif',
         fontWeight: 500,
@@ -82,7 +79,7 @@ export default function DownloadPDFButton({ sectionRef, filename = 'finsight-sec
         opacity: loading ? 0.6 : 1,
       }}
       onMouseEnter={e => {
-        if (!loading) {
+        if (!loading && !error) {
           e.currentTarget.style.background = 'var(--bg-surface)';
           e.currentTarget.style.color = 'var(--text-primary)';
           e.currentTarget.style.borderColor = 'var(--accent-primary)';
@@ -90,12 +87,12 @@ export default function DownloadPDFButton({ sectionRef, filename = 'finsight-sec
       }}
       onMouseLeave={e => {
         e.currentTarget.style.background = 'var(--bg-raised)';
-        e.currentTarget.style.color = 'var(--text-secondary)';
-        e.currentTarget.style.borderColor = 'var(--border-subtle)';
+        e.currentTarget.style.color = buttonColor;
+        e.currentTarget.style.borderColor = borderColor;
       }}
     >
       <Download size={13} />
-      {loading ? 'Generating…' : 'Download PDF'}
+      {loading ? 'Saving…' : error ? 'Failed — try again' : 'Save as PNG'}
     </button>
   );
 }
