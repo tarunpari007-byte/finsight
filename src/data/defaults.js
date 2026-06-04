@@ -160,4 +160,27 @@ export const NAV_ITEMS = [
   { id: 'fire', label: 'FIRE', icon: '🔥' },
   { id: 'insurance', label: 'Insurance', icon: '🛡️' },
   { id: 'emergency', label: 'Emergency Fund', icon: '🚨' },
+  { id: 'buyVsRent', label: 'Buy vs Rent', icon: '🏡' },
 ];
+
+export const DEFAULT_BUY_VS_RENT = {
+  // Property purchase
+  propertyPrice: 5000000,
+  downPaymentPct: 20,
+  loanTenure: 20,
+  interestRate: 8.5,
+  propertyAppreciation: 6,
+  // Associated annual expenses
+  propertyTaxPct: 1,
+  propertyTaxIncrement: 5,
+  societyMaintenance: 50000,
+  societyMaintenanceIncrement: 5,
+  houseMaintenance: 10000,
+  houseMaintenanceIncrement: 5,
+  // Renting
+  monthlyRent: 20000,
+  rentIncrease: 5,
+  depositBrokerage: 60000,
+  investmentReturn: 12,
+  analysisPeriod: 20,
+};

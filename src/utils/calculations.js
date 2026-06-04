@@ -241,6 +241,115 @@ export function calcEmergencyFund(monthlyExpenses, employmentType, dependents, c
   return { recommended, gap, pct, months };
 }
 
+// ─── Buy vs Rent ─────────────────────────────────────────────────────────────
+
+export function calcBuyVsRent(data) {
+  const {
+    propertyPrice, downPaymentPct, loanTenure, interestRate, propertyAppreciation,
+    propertyTaxPct, propertyTaxIncrement,
+    societyMaintenance, societyMaintenanceIncrement,
+    houseMaintenance, houseMaintenanceIncrement,
+    monthlyRent, rentIncrease, depositBrokerage, investmentReturn, analysisPeriod,
+  } = data;
+
+  // ── Loan ──────────────────────────────────────────────────────────────────
+  const downPayment = (propertyPrice * downPaymentPct) / 100;
+  const loanAmount = propertyPrice - downPayment;
+  const monthlyRate = interestRate / 12 / 100;
+  const numPayments = loanTenure * 12;
+
+  const emi = monthlyRate > 0
+    ? (loanAmount * monthlyRate * Math.pow(1 + monthlyRate, numPayments)) /
+      (Math.pow(1 + monthlyRate, numPayments) - 1)
+    : loanAmount / numPayments;
+
+  const totalLoanRepayment = emi * numPayments;
+
+  // ── Associated expenses (computed first — needed for total cost of house) ──
+  const annualPropertyTaxY1 = (propertyPrice * propertyTaxPct) / 100;
+  let totalPropertyTax = 0;
+  let totalSocietyMaint = 0;
+  let totalHouseMaint = 0;
+  let curTax = annualPropertyTaxY1;
+  let curSociety = societyMaintenance;
+  let curHouse = houseMaintenance;
+
+  for (let y = 1; y <= analysisPeriod; y++) {
+    totalPropertyTax += curTax;
+    totalSocietyMaint += curSociety;
+    totalHouseMaint += curHouse;
+    curTax *= (1 + propertyTaxIncrement / 100);
+    curSociety *= (1 + societyMaintenanceIncrement / 100);
+    curHouse *= (1 + houseMaintenanceIncrement / 100);
+  }
+  const totalAssociatedExpenses = totalPropertyTax + totalSocietyMaint + totalHouseMaint;
+
+  // ── Buying: NET GAIN ───────────────────────────────────────────────────────
+  // A = Down payment + total EMI paid over full loan tenure + associated expenses
+  const totalCostOfHouse = downPayment + totalLoanRepayment + totalAssociatedExpenses;
+  // B = Property value compounded over analysis period
+  const propertyValueAtEnd = propertyPrice * Math.pow(1 + propertyAppreciation / 100, analysisPeriod);
+  // C = B − A
+  const buyingNetGain = propertyValueAtEnd - totalCostOfHouse;
+  const buyingGainPct = totalCostOfHouse > 0 ? Math.round((buyingNetGain / totalCostOfHouse) * 100) : 0;
+
+  // ── Renting: NET GAIN ─────────────────────────────────────────────────────
+  // A: Total rent paid (growing each year)
+  let totalRentPaid = 0;
+  let currentMonthlyRent = monthlyRent;
+  const monthlyInvReturn = investmentReturn / 12 / 100;
+
+  // B: Future value of monthly SIP (EMI − rent, invested each month, end-of-month)
+  let sipCorpus = 0;
+
+  for (let y = 1; y <= analysisPeriod; y++) {
+    totalRentPaid += currentMonthlyRent * 12;
+    const monthlySurplus = Math.max(0, emi - currentMonthlyRent);
+    for (let m = 0; m < 12; m++) {
+      sipCorpus = sipCorpus * (1 + monthlyInvReturn) + monthlySurplus;
+    }
+    currentMonthlyRent *= (1 + rentIncrease / 100);
+  }
+
+  // C: Future value of lumpsum (down payment saved, minus deposit/brokerage paid)
+  const lumpsum = Math.max(0, downPayment - depositBrokerage);
+  const lumpsumFV = lumpsum * Math.pow(1 + investmentReturn / 100, analysisPeriod);
+
+  // D & E
+  const totalInvestments = sipCorpus + lumpsumFV;
+  const rentingNetGain = totalInvestments - totalRentPaid;
+
+  // ── Recommendation ────────────────────────────────────────────────────────
+  const recommendation = buyingNetGain >= rentingNetGain ? 'Buy' : 'Rent';
+
+  return {
+    emi: Math.round(emi),
+    downPayment: Math.round(downPayment),
+    totalLoanRepayment: Math.round(totalLoanRepayment),
+    // Buying
+    totalCostOfHouse: Math.round(totalCostOfHouse),
+    propertyValueAtEnd: Math.round(propertyValueAtEnd),
+    buyingNetGain: Math.round(buyingNetGain),
+    buyingGainPct,
+    // Associated expenses
+    annualPropertyTaxY1: Math.round(annualPropertyTaxY1),
+    totalPropertyTax: Math.round(totalPropertyTax),
+    totalSocietyMaint: Math.round(totalSocietyMaint),
+    totalHouseMaint: Math.round(totalHouseMaint),
+    totalAssociatedExpenses: Math.round(totalAssociatedExpenses),
+    // Renting
+    totalRentPaid: Math.round(totalRentPaid),
+    sipCorpus: Math.round(sipCorpus),
+    lumpsum: Math.round(lumpsum),
+    lumpsumFV: Math.round(lumpsumFV),
+    totalInvestments: Math.round(totalInvestments),
+    rentingNetGain: Math.round(rentingNetGain),
+    // Decision
+    recommendation,
+    analysisPeriod,
+  };
+}
+
 // ─── Dashboard Scores ─────────────────────────────────────────────────────────
 
 export function calcDashboardScores(appData) {

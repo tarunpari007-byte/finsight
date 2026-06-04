@@ -8,10 +8,11 @@ import Calculators from './sections/Calculators';
 import FIRECalculator from './sections/FIRE';
 import Insurance from './sections/Insurance';
 import EmergencyFund from './sections/EmergencyFund';
+import BuyVsRent from './sections/BuyVsRent';
 import { calcDashboardScores } from './utils/calculations';
 import {
   DEFAULT_GOALS, DEFAULT_SIP, DEFAULT_SWP, DEFAULT_EMI,
-  DEFAULT_FIRE, DEFAULT_INSURANCE, DEFAULT_EMERGENCY,
+  DEFAULT_FIRE, DEFAULT_INSURANCE, DEFAULT_EMERGENCY, DEFAULT_BUY_VS_RENT,
 } from './data/defaults';
 
 const SECTION_TITLES = {
@@ -21,6 +22,7 @@ const SECTION_TITLES = {
   fire: 'FIRE',
   insurance: 'Insurance',
   emergency: 'Emergency Fund',
+  buyVsRent: 'Buy vs Rent',
 };
 
 export default function App() {
@@ -39,6 +41,7 @@ export default function App() {
   const [lifeData, setLifeData] = useState(DEFAULT_INSURANCE.life);
   const [healthData, setHealthData] = useState(DEFAULT_INSURANCE.health);
   const [efData, setEfData] = useState(DEFAULT_EMERGENCY);
+  const [buyVsRentData, setBuyVsRentData] = useState(DEFAULT_BUY_VS_RENT);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -121,6 +124,13 @@ export default function App() {
           <EmergencyFund
             efData={efData}
             setEfData={(u) => { setEfData(u); markFilled('emergency'); }}
+          />
+        );
+      case 'buyVsRent':
+        return (
+          <BuyVsRent
+            data={buyVsRentData}
+            setData={(u) => { setBuyVsRentData(u); markFilled('buyVsRent'); }}
           />
         );
       default:
